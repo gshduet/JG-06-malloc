@@ -6,9 +6,15 @@ VERSION = 1
 HANDINDIR = /afs/cs.cmu.edu/academic/class/15213-f01/malloclab/handin
 
 CC = gcc
-CFLAGS = -Wall -O2 -m32
+CFLAGS = -g -Wall -O2 -m32
+LDFLAGS= -Wall -O2 -m32
 
 OBJS = mdriver.o mm.o memlib.o fsecs.o fcyc.o clock.o ftimer.o
+
+test: mdriver
+#	./mdriver -V -f traces/realloc2-bal.rep # 파일 1개 테스트
+#	traces 파일 내 모든 파일 테스트
+	./mdriver -V -t traces 
 
 mdriver: $(OBJS)
 	$(CC) $(CFLAGS) -o mdriver $(OBJS)
@@ -26,5 +32,3 @@ handin:
 
 clean:
 	rm -f *~ *.o mdriver
-
-
