@@ -240,17 +240,32 @@ void mm_free(void *bp) {
 /*
  * mm_realloc - Implemented simply in terms of mm_malloc and mm_free
  */
-void *mm_realloc(void *ptr, size_t size) {
+void *mm_realloc(void *ptr, size_t size){
     void *oldptr = ptr;
     void *newptr;
     size_t copySize;
-    
+
+    /* If size == 0 then this is just free, and we return NULL. */
+    if (size == 0) {
+        mm_free(ptr);
+        return NULL;
+    }
+
+    /* If oldptr is NULL, then this is just malloc. */
+    if (ptr == NULL) {
+        return mm_malloc(size);
+    }
+
     newptr = mm_malloc(size);
-    if (newptr == NULL)
-      return NULL;
-    copySize = *(size_t *)((char *)oldptr - SIZE_T_SIZE);
-    if (size < copySize)
-      copySize = size;
+    if (newptr == NULL) {
+        return NULL;
+    }
+
+    /* Copy the old data. */
+    copySize = GET_SIZE(HDRP(oldptr));
+    if (size < copySize) {
+        copySize = size;
+    }
     memcpy(newptr, oldptr, copySize);
     mm_free(oldptr);
     return newptr;
