@@ -24,34 +24,30 @@
  ********************************************************/
 team_t team = {
     /* Team name */
-    "ateam",
-    /* First member's full name */
-    "Harry Bovik",
-    /* First member's email address */
-    "bovik@cs.cmu.edu",
-    /* Second member's full name (leave blank if none) */
-    "",
-    /* Second member's email address (leave blank if none) */
-    ""
+    "6th",
+    "Sanghyun Gwon",
+    "modis2199@gmail.com",
+    "Kyle Gwon",
+    "gshduet@naver.com"
 };
 
 /* single word (4) or double word (8) alignment */
-#define ALIGNMENT 8
+// #define ALIGNMENT 8
 
-/* rounds up to the nearest multiple of ALIGNMENT */
-#define ALIGN(size) (((size) + (ALIGNMENT-1)) & ~0x7)
+// /* rounds up to the nearest multiple of ALIGNMENT */
+// #define ALIGN(size) (((size) + (ALIGNMENT-1)) & ~0x7)
 
-#define SIZE_T_SIZE (ALIGN(sizeof(size_t)))
+// #define SIZE_T_SIZE (ALIGN(sizeof(size_t)))
 
 /* Basic constants and macros */
-#define WSIZE       4       /* Word and header/footer size (bytes) */
-#define DSIZE       8       /* Double word size (bytes) */
-#define CHUNKSIZE  (1<<12)  /* Extend heap by this amount (bytes) */
+#define WSIZE       4       // 워드크기는 4바이트로 설정
+#define DSIZE       8       // 더블워드
+#define CHUNKSIZE  (1<<12)  // 힙을 확장할 때 사용할 크기 2**12 4096바이트, 4KB
 
-#define MAX(x, y) ((x) > (y)? (x) : (y))
+#define MAX(x, y) ((x) > (y)? (x) : (y)) // x, y 둘 중 큰 값을 반환
 
 /* Pack a size and allocated bit into a word */
-#define PACK(size, alloc)  ((size) | (alloc))
+#define PACK(size, alloc)  ((size) | (alloc)) //
 
 /* Read and write a word at address p */
 #define GET(p)       (*(unsigned int *)(p))
@@ -71,7 +67,7 @@ team_t team = {
 
 /* Global variables */
 static char *heap_listp = 0;  /* Pointer to first block */
-static char *last_bp = 0;     /* Pointer to last block visited */
+// static char *last_bp = 0;     /* Pointer to last block visited */
 
 /* Function prototypes for internal helper routines */
 static void *extend_heap(size_t words);
