@@ -67,12 +67,14 @@ team_t team = {
 
 /* Global variables */
 static char *heap_listp = 0;  /* Pointer to first block */
-// static char *last_bp = 0;     /* Pointer to last block visited */
+static void *last_ptr;     /* Pointer to last block visited */
 
 /* Function prototypes for internal helper routines */
 static void *extend_heap(size_t words);
 static void *coalesce(void *bp);
 static void *first_fit(size_t asize);
+static void *best_fit(size_t asize);
+static void *next_fit(size_t asize);
 static void place(void *bp, size_t asize);
 
 /* 
@@ -87,6 +89,8 @@ int mm_init(void) {
     PUT(heap_listp + (2*WSIZE), PACK(DSIZE, 1)); /* Prologue footer */
     PUT(heap_listp + (3*WSIZE), PACK(0, 1));     /* Epilogue header */
     heap_listp += (2*WSIZE);
+
+    last_ptr = heap_listp;  // Initialize last_ptr
 
     /* Extend the empty heap with a free block of CHUNKSIZE bytes */
     if (extend_heap(CHUNKSIZE/WSIZE) == NULL) 
@@ -123,26 +127,31 @@ static void *coalesce(void *bp) {
     size_t next_alloc = GET_ALLOC(HDRP(NEXT_BLKP(bp)));
     size_t size = GET_SIZE(HDRP(bp));
 
-    if (prev_alloc && next_alloc) {            /* Case 1 */
+    if (prev_alloc && next_alloc) {
         return bp;
     }
 
-    else if (prev_alloc && !next_alloc) {      /* Case 2 */
+    else if (prev_alloc && !next_alloc) {
         size += GET_SIZE(HDRP(NEXT_BLKP(bp)));
+        if (last_ptr == NEXT_BLKP(bp))  // Update last_ptr if needed
+            last_ptr = bp;
         PUT(HDRP(bp), PACK(size, 0));
         PUT(FTRP(bp), PACK(size,0));
     }
 
-    else if (!prev_alloc && next_alloc) {      /* Case 3 */
+    else if (!prev_alloc && next_alloc) {
         size += GET_SIZE(HDRP(PREV_BLKP(bp)));
+        if (last_ptr == bp)  // Update last_ptr if needed
+            last_ptr = PREV_BLKP(bp);
         PUT(FTRP(bp), PACK(size, 0));
         PUT(HDRP(PREV_BLKP(bp)), PACK(size, 0));
         bp = PREV_BLKP(bp);
     }
 
-    else {                                     /* Case 4 */
-        size += GET_SIZE(HDRP(PREV_BLKP(bp))) + 
-            GET_SIZE(FTRP(NEXT_BLKP(bp)));
+    else {
+        size += GET_SIZE(HDRP(PREV_BLKP(bp))) + GET_SIZE(FTRP(NEXT_BLKP(bp)));
+        if (last_ptr == bp || last_ptr == NEXT_BLKP(bp))  // Update last_ptr if needed
+            last_ptr = PREV_BLKP(bp);
         PUT(HDRP(PREV_BLKP(bp)), PACK(size, 0));
         PUT(FTRP(NEXT_BLKP(bp)), PACK(size, 0));
         bp = PREV_BLKP(bp);
@@ -172,6 +181,8 @@ void *mm_malloc(size_t size) {
 
     /* Search the free list for a fit */
     if ((bp = first_fit(asize)) != NULL) {  
+    // if ((bp = best_fit(asize)) != NULL) {  
+    // if ((bp = next_fit(asize)) != NULL) {  
         place(bp, asize);                  
         return bp;
     }
@@ -198,6 +209,49 @@ static void *first_fit(size_t asize) {
     }
     return NULL; /* No fit */
 }
+
+static void *best_fit(size_t asize) {
+    void *bp;
+    void *best_fit = NULL;
+    size_t min_size = ~0;  // 최대값으로 초기화
+
+    for (bp = heap_listp; GET_SIZE(HDRP(bp)) > 0; bp = NEXT_BLKP(bp)) {
+        if (!GET_ALLOC(HDRP(bp)) && asize <= GET_SIZE(HDRP(bp))) {
+            if (GET_SIZE(HDRP(bp)) < min_size) {
+                min_size = GET_SIZE(HDRP(bp));
+                best_fit = bp;
+            }
+        }
+    }
+
+    return best_fit;
+}
+
+static void *next_fit(size_t asize) {
+    void *bp;
+    void *old_last_ptr = last_ptr;  // 원래 위치 저장
+
+    /* Search from last_ptr to end of heap */
+    for (bp = last_ptr; GET_SIZE(HDRP(bp)) > 0; bp = NEXT_BLKP(bp)) {
+        if (!GET_ALLOC(HDRP(bp)) && (asize <= GET_SIZE(HDRP(bp)))) {
+            last_ptr = NEXT_BLKP(bp);
+            return bp;
+        }
+    }
+
+    /* Search from start of heap to old_last_ptr */
+    for (bp = heap_listp; GET_SIZE(HDRP(bp)) > 0 && bp != old_last_ptr; bp = NEXT_BLKP(bp)) {
+        if (!GET_ALLOC(HDRP(bp)) && (asize <= GET_SIZE(HDRP(bp)))) {
+            last_ptr = NEXT_BLKP(bp);
+            return bp;
+        }
+    }
+
+    /* No fit found */
+    last_ptr = heap_listp;
+    return NULL;
+}
+
 
 /* 
  * place - Place block of asize bytes at start of free block bp 
